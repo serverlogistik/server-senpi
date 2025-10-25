@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Sistem Tracking Senpi</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* [ ... CSS LU YANG SUPER KEREN ... ] */
+        /* (Tidak ada perubahan di CSS, jadi saya sembunyikan agar rapi) */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #dc2626;
+            --primary-dark: #b91c1c;
+            --secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --sidebar: #1e293b;
+            --sidebar-hover: #334155;
+        }
+
+        body {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* === SIDEBAR === */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar);
+            color: white;
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 0 2rem 2rem;
+            border-bottom: 1px solid #334155;
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sidebar-header h1 i {
+            color: var(--primary);
+        }
+
+        .nav-item {
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            cursor: pointer;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: var(--sidebar-hover);
+            color: white;
+            border-left-color: var(--primary);
+        }
+
+        /* === MAIN CONTENT === */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .top-bar {
+            background: white;
+            padding: 1.5rem 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-badge {
+            background: var(--primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .action-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .action-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        .action-card i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card.total .stat-number { color: var(--primary); }
+        .stat-card.aktif .stat-number { color: var(--success); }
+        .stat-card.pending .stat-number { color: var(--warning); }
+        .stat-card.expired .stat-number { color: var(--danger); }
+
+        .stat-label {
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        /* Tables */
+        .table-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .table-header h2 {
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .search-filter {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .search-filter input, .search-filter select {
+            padding: 0.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .modern-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .modern-table th {
+            background: var(--light);
+            color: var(--secondary);
+            font-weight: 600;
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .modern-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .modern-table tr:hover {
+            background: #f8fafc;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.25rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:disabled {
+            background: #e2e8f0;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .btn-edit { background: #dbeafe; color: #2563eb; }
+        .btn-delete { background: #fee2e2; color: #dc2626; }
+        .btn-assign { background: #dcfce7; color: #16a34a; }
+        .btn-warning { background: #fef3c7; color: #d97706; }
+        .btn-export { background: #8b5cf6; color: white; }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Status Badges */
+        .status-aktif { 
+            background: #dcfce7; 
+            color: #16a34a; 
+            padding: 0.5rem 1rem; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            font-weight: 600; 
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .status-pending { 
+            background: #fef3c7; 
+            color: #d97706; 
+            padding: 0.5rem 1rem; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .status-expired { 
+            background: #fee2e2; 
+            color: #dc2626; 
+            padding: 0.5rem 1rem; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal h2 {
+            margin-bottom: 1.5rem;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+        
+        .input-group input:read-only {
+            background: #f1f5f9;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+
+        .btn-cancel {
+            background: #64748b;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        .btn-cancel:disabled {
+            background: #cbd5e1;
+        }
+
+        .btn-submit {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-submit:disabled {
+            background: #fca5a5;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: #cbd5e1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .table-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .search-filter {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h1><i class="fas fa-crown"></i> ADMIN PANEL</h1>
+        </div>
+        <a href="#" class="nav-item active">
+            <i class="fas fa-tachometer-alt"></i>
+            Dashboard
+        </a>
+        <a href="#" class="nav-item">
+            <i class="fas fa-users"></i>
+            Kelola Personel
+        </a>
+        <a href="#" class="nav-item">
+            <i class="fas fa-gun"></i>
+            Kelola Senpi
+        </a>
+        <a href="#" class="nav-item">
+            <i class="fas fa-chart-bar"></i>
+            Laporan
+        </a>
+        <a href="#" class="nav-item">
+            <i class="fas fa-cog"></i>
+            Pengaturan
+        </a>
+    </nav>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div>
+                <h1>👑 DASHBOARD SUPER ADMIN</h1>
+                <p>Kontrol penuh sistem tracking senpi</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <span class="admin-badge">
+                    <i class="fas fa-shield-alt"></i> SUPER ADMIN
+                </span>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <div class="action-card" onclick="showAddUserModal()">
+                <i class="fas fa-user-plus"></i>
+                <h3>Tambah Personel</h3>
+                <p>Tambahkan personel baru</p>
+            </div>
+            <div class="action-card" onclick="showAddSenpiModal()">
+                <i class="fas fa-plus-circle"></i>
+                <h3>Tambah Senpi</h3>
+                <p>Input senpi baru</p>
+            </div>
+            <div class="action-card" onclick="showExportModal()">
+                <i class="fas fa-file-export"></i>
+                <h3>Export Data</h3>
+                <p>Download backup</p>
+            </div>
+            <div class="action-card" onclick="showAuditLog()">
+                <i class="fas fa-history"></i>
+                <h3>Audit Log</h3>
+                <p>Lihat aktivitas</p>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card total">
+                <span class="stat-number" id="totalPersonel">0</span>
+                <div class="stat-label">Total Personel</div>
+            </div>
+            <div class="stat-card total">
+                <span class="stat-number" id="totalSenpi">0</span>
+                <div class="stat-label">Total Senpi</div>
+            </div>
+            <div class="stat-card aktif">
+                <span class="stat-number" id="senpiAktif">0</span>
+                <div class="stat-label">Senpi Aktif</div>
+            </div>
+            <div class="stat-card pending">
+                <span class="stat-number" id="senpiPending">0</span>
+                <div class="stat-label">Perlu Input Data</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h2><i class="fas fa-users"></i> SEMUA PERSONEL (<span id="totalUsersCount">0</span>)</h2>
+                <div class="search-filter">
+                    <input type="text" id="searchUsers" placeholder="Cari nama atau NRP..." 
+                           onkeyup="filterUsersTable()">
+                    <select id="filterKesatuan" onchange="filterUsersTable()">
+                        <option value="">Semua Kesatuan</option>
+                        <option value="YON A">YON A</option>
+                        <option value="PAMA RESIMEN">PAMA RESIMEN</option>
+                    </select>
+                </div>
+            </div>
+
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>NRP</th>
+                        <th>Nama</th>
+                        <th>Pangkat</th>
+                        <th>Kesatuan</th>
+                        <th>Jumlah Senpi</th>
+                        <th>Status Data</th>
+                        <th width="200">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="allUsersTable">
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <div>Memuat data personel...</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h2><i class="fas fa-list"></i> SEMUA DATA SENPI (<span id="totalSenpiCount">0</span>)</h2>
+                <div class="search-filter">
+                    <input type="text" id="searchSenpi" placeholder="Cari nomor seri..." 
+                           onkeyup="filterSenpiTable()">
+                    <select id="filterStatus" onchange="filterSenpiTable()">
+                        <option value="">Semua Status</option>
+                        <option value="aktif">Aktif</option>
+                        <option value="pending">Pending</option>
+                        <option value="expired">Expired</option>
+                    </select>
+                </div>
+            </div>
+
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>Nomor Seri</th>
+                        <th>Pemilik</th>
+                        <th>NRP</th>
+                        <th>Status</th>
+                        <th>Tanggal SIMSA</th>
+                        <th>Expired</th>
+                        <th>Keterangan</th>
+                        <th width="250">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="allSenpiTable">
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <div>Memuat data senpi...</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <h2><i class="fas fa-user-plus"></i> Tambah Personel Baru</h2>
+            <form id="addUserForm">
+                <div class="input-group">
+                    <label>NRP *</label>
+                    <input type="text" id="newNrp" required maxlength="8" pattern="[0-9]+">
+                </div>
+                <div class="input-group">
+                    <label>Nama Lengkap *</label>
+                    <input type="text" id="newNama" required>
+                </div>
+                <div class="input-group">
+                    <label>Pangkat *</label>
+                    <select id="newPangkat" required>
+                        <option value="">Pilih Pangkat</option>
+                        <option value="IPTU">IPTU</option>
+                        <option value="IPDA">IPDA</option>
+                        <option value="AIPTU">AIPTU</option>
+                        <option value="AIPDA">AIPDA</option>
+                        <option value="BRIPTU">BRIPTU</option>
+                        <option value="BRIPDA">BRIPDA</option>
+                        <option value="BRIGADIR">BRIGADIR</option>
+                        <option value="BHARATU">BHARATU</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Kesatuan *</label>
+                    <select id="newKesatuan" required>
+                        <option value="">Pilih Kesatuan</option>
+                        <option value="YON A">YON A</option>
+                        <option value="PAMA RESIMEN">PAMA RESIMEN</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="hideAddUserModal()">Batal</button>
+                    <button type="submit" class="btn-submit" id="addUserSubmitBtn">
+                        <i class="fas fa-save"></i>
+                        Simpan Personel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="addSenpiModal" class="modal">
+        <div class="modal-content">
+            <h2><i class="fas fa-plus-circle"></i> Tambah Senpi Baru</h2>
+            <form id="addSenpiForm">
+                <div class="input-group">
+                    <label>Nomor Seri *</label>
+                    <input type="text" id="newNomorSeri" required>
+                </div>
+                <div class="input-group">
+                    <label>Pemilik *</label>
+                    <select id="newPemilik" required>
+                        <option value="">Pilih Personel</option>
+                        </select>
+                </div>
+                <div class="input-group">
+                    <label>Jenis Senpi *</label>
+                    <select id="newJenis" required>
+                        <option value="Senpi Pendek">Senpi Pendek</option>
+                        <option value="Senpi Panjang">Senpi Panjang</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Keterangan</label>
+                    <textarea id="newKeterangan" rows="3" placeholder="Contoh: STANDBY BATALYON, YANKAM, dll"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="hideAddSenpiModal()">Batal</button>
+                    <button type="submit" class="btn-submit" id="addSenpiSubmitBtn">
+                        <i class="fas fa-save"></i>
+                        Simpan Senpi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="exportModal" class="modal">
+        <div class="modal-content">
+            <h2><i class="fas fa-file-export"></i> Export Data Sistem</h2>
+            <div class="input-group">
+                <label>Jenis Export</label>
+                <select id="exportType">
+                    <option value="json">JSON (Backup Lengkap)</option>
+                    <option value="pdf">PDF Report</option>
+                    <option value="excel">Excel (CSV)</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Keterangan Export</label>
+                <input type="text" id="exportNotes" placeholder="Backup bulan Januari 2024">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="hideExportModal()">Batal</button>
+                <button type="button" class="btn-submit" onclick="exportData()">
+                    <i class="fas fa-download"></i>
+                    Download
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <h2><i class="fas fa-user-edit"></i> Edit Data Personel</h2>
+            <form id="editUserForm">
+                <div class="input-group">
+                    <label>NRP</label>
+                    <input type="text" id="editUserNrp" readonly>
+                </div>
+                <div class="input-group">
+                    <label>Nama Lengkap *</label>
+                    <input type="text" id="editUserNama" required>
+                </div>
+                <div class="input-group">
+                    <label>Pangkat *</label>
+                    <select id="editUserPangkat" required>
+                        <option value="">Pilih Pangkat</option>
+                        <option value="IPTU">IPTU</option>
+                        <option value="IPDA">IPDA</option>
+                        <option value="AIPTU">AIPTU</option>
+                        <option value="AIPDA">AIPDA</option>
+                        <option value="BRIPTU">BRIPTU</option>
+                        <option value="BRIPDA">BRIPDA</option>
+                        <option value="BRIGADIR">BRIGADIR</option>
+                        <option value="BHARATU">BHARATU</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Kesatuan</label>
+                    <input type="text" id="editUserKeterangan" placeholder="Kesatuan: YON A / PAMA RESIMEN">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="hideEditUserModal()">Batal</button>
+                    <button type="submit" class="btn-submit" id="editUserSubmitBtn">
+                        <i class="fas fa-save"></i> Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editSenpiModal" class="modal">
+        <div class="modal-content">
+            <h2><i class="fas fa-gun"></i> Edit Data Senpi</h2>
+            <form id="editSenpiForm">
+                <div class="input-group">
+                    <label>Nomor Seri</label>
+                    <input type="text" id="editSenpiNomorSeri" readonly>
+                </div>
+                <div class="input-group">
+                    <label>Status *</label>
+                    <select id="editSenpiStatus" required>
+                        <option value="">Pilih Status</option>
+                        <option value="AKTIF">AKTIF</option>
+                        <option value="NON-AKTIF">NON-AKTIF</option>
+                        <option value="PERBAIKAN">PERBAIKAN</option>
+                        <option value="HILANG">HILANG</option>
+                        <option value="PENDING">PENDING</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Keterangan</label>
+                    <input type="text" id="editSenpiKeterangan" placeholder="STANDBY BATALYON, YANKAM, dll">
+                </div>
+                <div class="input-group">
+                    <label>Tanggal Expired SIMSA</label>
+                    <input type="date" id="editSenpiExpired">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="hideEditSenpiModal()">Batal</button>
+                    <button type="submit" class="btn-submit" id="editSenpiSubmitBtn">
+                        <i class="fas fa-save"></i> Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="assignSenpiModal" class="modal">
+        <div class="modal-content">
+            <h2><i class="fas fa-exchange-alt"></i> Assign Senpi</h2>
+            <form id="assignSenpiForm">
+                <div class="input-group">
+                    <label>Nomor Seri Senpi</label>
+                    <input type="text" id="assignSenpiNomorSeri" readonly>
+                </div>
+                <div class="input-group">
+                    <label>Assign ke Personel *</label>
+                    <select id="assignSenpiPersonel" required>
+                        <option value="">Pilih Personel</option>
+                        </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="hideAssignSenpiModal()">Batal</button>
+                    <button type="submit" class="btn-submit" id="assignSenpiSubmitBtn">
+                        <i class="fas fa-check"></i> Assign Senpi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ✅ API URL DARI GOOGLE APPS SCRIPT
+        const API_URL = 'https://script.google.com/macros/s/AKfycbw5FruDwtoKoXI_9M-OVeehQOXuI7oDwxsmpbOwVjwFod6QX94FFZsrVdusRy5mkf4ihQ/exec';
+        
+        let APP_DATA = {};
+        let currentFilter = {
+            users: '',
+            kesatuan: '',
+            senpi: '',
+            status: ''
+        };
+
+        // Load data on start
+        async function loadData() {
+            setLoadingState(true);
+            try {
+                console.log('🔄 Memuat data admin...');
+                const response = await fetch(API_URL + '?action=getAllData');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    APP_DATA = convertSheetsData(result.data);
+                    initializeAdminDashboard();
+                } else {
+                    throw new Error(result.error || 'Struktur data dari server salah');
+                }
+            } catch (error) {
+                console.error('❌ Gagal memuat data:', error);
+                alert('Gagal memuat data sistem: ' + error.message);
+                document.getElementById('allUsersTable').innerHTML = '<tr><td colspan="7" class="empty-state">❌ Gagal memuat data. Cek koneksi dan API URL.</td></tr>';
+                document.getElementById('allSenpiTable').innerHTML = '<tr><td colspan="8" class="empty-state">❌ Gagal memuat data. Cek koneksi dan API URL.</td></tr>';
+            } finally {
+                setLoadingState(false);
+            }
+        }
+        
+        function setLoadingState(isLoading) {
+            // Disable/enable modal buttons
+            const buttons = document.querySelectorAll('.btn-submit, .btn-cancel, .btn-delete, .btn-edit, .btn-assign');
+            buttons.forEach(btn => btn.disabled = isLoading);
+            
+            // Show/hide spinners
+            if (isLoading) {
+                 document.getElementById('allUsersTable').innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
+                 document.getElementById('allSenpiTable').innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
+            }
+        }
+
+        // Fungsi ini SAMA seperti kode lu, dia mengubah data Google Sheet
+        // yang mentah menjadi format JSON yang lu inginkan
+        function convertSheetsData(sheetsData) {
+            const converted = { users: {} };
+            
+            sheetsData.forEach(row => {
+                const nrp = row.NRP ? row.NRP.toString().trim() : '';
+                if (nrp) {
+                    if (!converted.users[nrp]) {
+                        converted.users[nrp] = {
+                            nama: row.NAMA || '',
+                            pangkat: row.PANGKAT || '',
+                            kesatuan: row.KESATUAN || '', // Diperbaiki dari 'KETERANGAN'
+                            status: 'Aktif'
+                        };
+                    }
+                    
+                    if (row.NO_SENPI) {
+                        if (!converted.users[nrp].senpi) {
+                            converted.users[nrp].senpi = [];
+                        }
+                        
+                        converted.users[nrp].senpi.push({
+                            nomor_seri: row.NO_SENPI,
+                            jenis: 'Senpi Pendek', // Ini mungkin perlu ada di sheet
+                            keterangan: row.KETERANGAN || '',
+                            status: row.STATUS || 'PENDING',
+                            tanggal_terbit_simsa: row.TANGGAL_TERBIT_SIMSA || '',
+                            tanggal_expired: row.EXPIRED_SIMSA || '',
+                            foto_simsa: row.FOTO_SIMSA || '',
+                            foto_senpi: row.FOTO_SENPI || ''
+                        });
+                    }
+                }
+            });
+            
+            return converted;
+        }
+
+        function initializeAdminDashboard() {
+            loadAllUsersTable();
+            loadAllSenpiTable();
+            updateStats();
+            initializeModals();
+        }
+
+        function loadAllUsersTable() {
+            const tbody = document.getElementById('allUsersTable');
+            const users = APP_DATA.users;
+            
+            if (Object.keys(users).length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <div>Belum ada data personel</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let filteredUsers = Object.keys(users);
+            
+            if (currentFilter.users) {
+                filteredUsers = filteredUsers.filter(nrp => {
+                    const user = users[nrp];
+                    return user.nama.toLowerCase().includes(currentFilter.users.toLowerCase()) ||
+                           nrp.includes(currentFilter.users);
+                });
+            }
+            
+            if (currentFilter.kesatuan) {
+                filteredUsers = filteredUsers.filter(nrp => 
+                    users[nrp].kesatuan.includes(currentFilter.kesatuan)
+                );
+            }
+            
+            tbody.innerHTML = filteredUsers.map(nrp => {
+                const user = users[nrp];
+                const totalSenpi = user.senpi ? user.senpi.length : 0;
+                const hasPending = user.senpi ? user.senpi.some(s => s.status === 'PENDING') : false;
+                const hasExpired = user.senpi ? user.senpi.some(s => {
+                    if (!s.tanggal_expired) return false;
+                    return new Date(s.tanggal_expired) < new Date();
+                }) : false;
+                
+                let status = 'Lengkap';
+                let statusClass = 'status-aktif';
+                
+                if (hasExpired) {
+                    status = 'Ada Expired';
+                    statusClass = 'status-expired';
+                } else if (hasPending) {
+                    status = 'Perlu Input';
+                    statusClass = 'status-pending';
+                }
+                
+                return `
+                    <tr>
+                        <td><strong>${nrp}</strong></td>
+                        <td>${user.nama}</td>
+                        <td>${user.pangkat}</td>
+                        <td>${user.kesatuan}</td>
+                        <td>${totalSenpi} senpi</td>
+                        <td><span class="${statusClass}">${status}</span></td>
+                        <td>
+                            <button class="btn btn-edit" onclick="showEditUserModal('${nrp}')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-delete" onclick="deleteUser('${nrp}')">
+                                <i class="fas fa-trash"></i> Hapus
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            document.getElementById('totalUsersCount').textContent = filteredUsers.length;
+        }
+
+        function loadAllSenpiTable() {
+            const tbody = document.getElementById('allSenpiTable');
+            let allSenpi = [];
+            
+            Object.keys(APP_DATA.users).forEach(nrp => {
+                const user = APP_DATA.users[nrp];
+                if (user.senpi) {
+                    user.senpi.forEach(senpi => {
+                        allSenpi.push({
+                            ...senpi,
+                            pemilik_nrp: nrp,
+                            pemilik_nama: user.nama
+                        });
+                    });
+                }
+            });
+            
+            if (allSenpi.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <div>Belum ada data senpi</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let filteredSenpi = allSenpi;
+            
+            if (currentFilter.senpi) {
+                filteredSenpi = filteredSenpi.filter(s => 
+                    s.nomor_seri.toLowerCase().includes(currentFilter.senpi.toLowerCase())
+                );
+            }
+            
+            if (currentFilter.status) {
+                filteredSenpi = filteredSenpi.filter(s => {
+                    const status = s.status || 'PENDING';
+                    if (currentFilter.status === 'aktif') {
+                        return status === 'AKTIF';
+                    } else if (currentFilter.status === 'pending') {
+                        return status === 'PENDING';
+                    } else if (currentFilter.status === 'expired') {
+                        return s.tanggal_expired && new Date(s.tanggal_expired) < new Date();
+                    }
+                    return true;
+                });
+            }
+            
+            tbody.innerHTML = filteredSenpi.map(senpi => {
+                const status = senpi.status || 'PENDING';
+                let statusClass = 'status-pending';
+                if (status === 'AKTIF') {
+                    statusClass = 'status-aktif';
+                } else if (status !== 'PENDING') {
+                    statusClass = 'status-expired';
+                }
+                
+                return `
+                    <tr>
+                        <td><strong>${senpi.nomor_seri}</strong></td>
+                        <td>${senpi.pemilik_nama}</td>
+                        <td>${senpi.pemilik_nrp}</td>
+                        <td><span class="${statusClass}">${status}</span></td>
+                        <td>${senpi.tanggal_terbit_simsa || '-'}</td>
+                        <td>${senpi.tanggal_expired || '-'}</td>
+                        <td>${senpi.keterangan}</td>
+                        <td>
+                            <button class="btn btn-edit" onclick="showEditSenpiModal('${senpi.nomor_seri}')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-assign" onclick="showAssignSenpiModal('${senpi.nomor_seri}')">
+                                <i class="fas fa-exchange-alt"></i> Assign
+                            </button>
+                            <button class="btn btn-delete" onclick="deleteSenpi('${senpi.nomor_seri}')">
+                                <i class="fas fa-trash"></i> Hapus
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            document.getElementById('totalSenpiCount').textContent = filteredSenpi.length;
+        }
+
+        function updateStats() {
+            const users = Object.keys(APP_DATA.users);
+            let totalSenpi = 0;
+            let senpiAktif = 0;
+            let senpiPending = 0;
+            
+            users.forEach(nrp => {
+                const user = APP_DATA.users[nrp];
+                if (user.senpi) {
+                    totalSenpi += user.senpi.length;
+                    user.senpi.forEach(senpi => {
+                        const status = senpi.status || 'PENDING';
+                        if (status === 'PENDING') {
+                            senpiPending++;
+                        } else if (status === 'AKTIF') {
+                            senpiAktif++;
+                        }
+                    });
+                }
+            });
+            
+            document.getElementById('totalPersonel').textContent = users.length;
+            document.getElementById('totalSenpi').textContent = totalSenpi;
+            document.getElementById('senpiAktif').textContent = senpiAktif;
+            document.getElementById('senpiPending').textContent = senpiPending;
+        }
+
+        // Filter Functions
+        function filterUsersTable() {
+            currentFilter.users = document.getElementById('searchUsers').value;
+            currentFilter.kesatuan = document.getElementById('filterKesatuan').value;
+            loadAllUsersTable();
+        }
+
+        function filterSenpiTable() {
+            currentFilter.senpi = document.getElementById('searchSenpi').value;
+            currentFilter.status = document.getElementById('filterStatus').value;
+            loadAllSenpiTable();
+        }
+
+        // ✅ MODAL FUNCTIONS
+        function initializeModals() {
+            document.getElementById('addUserForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await addNewUser();
+            });
+
+            document.getElementById('addSenpiForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await addNewSenpi();
+            });
+            
+            document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await updateUserData();
+            });
+
+            document.getElementById('editSenpiForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await updateSenpiData();
+            });
+
+            document.getElementById('assignSenpiForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await assignSenpiToUser();
+            });
+        }
+        
+        function setModalLoading(modalId, isLoading) {
+            const modal = document.getElementById(modalId);
+            const submitBtn = modal.querySelector('.btn-submit');
+            const cancelBtn = modal.querySelector('.btn-cancel');
+            
+            if (submitBtn) submitBtn.disabled = isLoading;
+            if (cancelBtn) cancelBtn.disabled = isLoading;
+            
+            if (submitBtn) {
+                const icon = submitBtn.querySelector('i');
+                if (isLoading) {
+                    icon.className = "fas fa-spinner fa-spin";
+                } else {
+                    // Reset icon
+                    if (modalId.includes('add')) icon.className = "fas fa-save";
+                    if (modalId.includes('edit')) icon.className = "fas fa-save";
+                    if (modalId.includes('assign')) icon.className = "fas fa-check";
+                }
+            }
+        }
+
+
+        // ✅ SHOW/HIDE MODALS (Tidak berubah)
+        function showAddUserModal() {
+            document.getElementById('addUserModal').style.display = 'flex';
+        }
+        function hideAddUserModal() {
+            document.getElementById('addUserModal').style.display = 'none';
+            document.getElementById('addUserForm').reset();
+        }
+        function showAddSenpiModal() {
+            const select = document.getElementById('newPemilik');
+            select.innerHTML = '<option value="">Pilih Personel</option>';
+            Object.keys(APP_DATA.users).sort((a,b) => APP_DATA.users[a].nama.localeCompare(APP_DATA.users[b].nama)).forEach(nrp => {
+                const user = APP_DATA.users[nrp];
+                select.innerHTML += `<option value="${nrp}">${nrp} - ${user.nama}</option>`;
+            });
+            document.getElementById('addSenpiModal').style.display = 'flex';
+        }
+        function hideAddSenpiModal() {
+            document.getElementById('addSenpiModal').style.display = 'none';
+            document.getElementById('addSenpiForm').reset();
+        }
+        function showExportModal() { document.getElementById('exportModal').style.display = 'flex'; }
+        function hideExportModal() { document.getElementById('exportModal').style.display = 'none'; }
+        function showEditUserModal(nrp) {
+            const user = APP_DATA.users[nrp];
+            document.getElementById('editUserNrp').value = nrp;
+            document.getElementById('editUserNama').value = user.nama;
+            document.getElementById('editUserPangkat').value = user.pangkat;
+            document.getElementById('editUserKeterangan').value = user.kesatuan || '';
+            document.getElementById('editUserModal').style.display = 'flex';
+        }
+        function hideEditUserModal() { document.getElementById('editUserModal').style.display = 'none'; }
+        function showEditSenpiModal(nomorSeri) {
+            let senpiData = null;
+            Object.keys(APP_DATA.users).forEach(nrp => {
+                const user = APP_DATA.users[nrp];
+                if (user.senpi) {
+                    const found = user.senpi.find(s => s.nomor_seri === nomorSeri);
+                    if (found) senpiData = found;
+                }
+            });
+            
+            if (senpiData) {
+                document.getElementById('editSenpiNomorSeri').value = nomorSeri;
+                document.getElementById('editSenpiStatus').value = senpiData.status || 'PENDING';
+                document.getElementById('editSenpiKeterangan').value = senpiData.keterangan || '';
+                document.getElementById('editSenpiExpired').value = senpiData.tanggal_expired || '';
+                document.getElementById('editSenpiModal').style.display = 'flex';
+            }
+        }
+        function hideEditSenpiModal() { document.getElementById('editSenpiModal').style.display = 'none'; }
+        function showAssignSenpiModal(nomorSeri) {
+            document.getElementById('assignSenpiNomorSeri').value = nomorSeri;
+            const select = document.getElementById('assignSenpiPersonel');
+            select.innerHTML = '<option value="">Pilih Personel</option>';
+            Object.keys(APP_DATA.users).sort((a,b) => APP_DATA.users[a].nama.localeCompare(APP_DATA.users[b].nama)).forEach(nrp => {
+                const user = APP_DATA.users[nrp];
+                select.innerHTML += `<option value="${nrp}">${nrp} - ${user.nama}</option>`;
+            });
+            document.getElementById('assignSenpiModal').style.display = 'flex';
+        }
+        function hideAssignSenpiModal() { document.getElementById('assignSenpiModal').style.display = 'none'; }
+
+        // ✅ ACTION FUNCTIONS (DIUBAH TOTAL)
+        
+        // Fungsi ini sekarang mengirim data ke Google Sheet
+        async function addNewUser() {
+            setModalLoading('addUserModal', true);
+            const nrp = document.getElementById('newNrp').value;
+            const nama = document.getElementById('newNama').value;
+            const pangkat = document.getElementById('newPangkat').value;
+            const kesatuan = document.getElementById('newKesatuan').value;
+            
+            if (APP_DATA.users[nrp]) {
+                alert('NRP sudah terdaftar!');
+                setModalLoading('addUserModal', false);
+                return;
+            }
+            
+            try {
+                const url = `${API_URL}?action=addNewUser&nrp=${nrp}&nama=${encodeURIComponent(nama)}&pangkat=${encodeURIComponent(pangkat)}&kesatuan=${encodeURIComponent(kesatuan)}`;
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ Personel berhasil ditambahkan!');
+                    hideAddUserModal();
+                    await loadData(); // Reload data dari server
+                } else {
+                    throw new Error(result.error || 'Gagal menambahkan personel');
+                }
+            } catch (error) {
+                alert('❌ Gagal: ' + error.message);
+            } finally {
+                setModalLoading('addUserModal', false);
+            }
+        }
+
+        // Fungsi ini sekarang mengirim data ke Google Sheet
+        async function addNewSenpi() {
+            setModalLoading('addSenpiModal', true);
+            const nomorSeri = document.getElementById('newNomorSeri').value.toUpperCase();
+            const pemilikNrp = document.getElementById('newPemilik').value;
+            const jenis = document.getElementById('newJenis').value;
+            const keterangan = document.getElementById('newKeterangan').value;
+            
+            let senpiExists = false;
+            Object.keys(APP_DATA.users).forEach(nrp => {
+                if (APP_DATA.users[nrp].senpi?.some(s => s.nomor_seri === nomorSeri)) {
+                    senpiExists = true;
+                }
+            });
+            
+            if (senpiExists) {
+                alert('Nomor seri senpi sudah terdaftar!');
+                setModalLoading('addSenpiModal', false);
+                return;
+            }
+            
+            try {
+                const url = `${API_URL}?action=addNewSenpi&nomor_seri=${encodeURIComponent(nomorSeri)}&pemilik_nrp=${pemilikNrp}&jenis=${encodeURIComponent(jenis)}&keterangan=${encodeURIComponent(keterangan)}`;
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ Senpi berhasil ditambahkan!');
+                    hideAddSenpiModal();
+                    await loadData(); // Reload data dari server
+                } else {
+                    throw new Error(result.error || 'Gagal menambahkan senpi');
+                }
+            } catch (error) {
+                alert('❌ Gagal: ' + error.message);
+            } finally {
+                setModalLoading('addSenpiModal', false);
+            }
+        }
+
+        // Fungsi ini sudah benar (asli dari lu)
+        async function updateUserData() {
+            setModalLoading('editUserModal', true);
+            const nrp = document.getElementById('editUserNrp').value;
+            const nama = document.getElementById('editUserNama').value;
+            const pangkat = document.getElementById('editUserPangkat').value;
+            const kesatuan = document.getElementById('editUserKeterangan').value; // di sheet harusnya 'KESATUAN'
+            
+            try {
+                // Update NAMA
+                let r1 = await fetch(`${API_URL}?action=updateUserData&nrp=${nrp}&field=NAMA&new_value=${encodeURIComponent(nama)}`);
+                let j1 = await r1.json();
+                if (!j1.success) throw new Error(j1.error || 'Gagal update NAMA');
+                
+                // Update PANGKAT
+                let r2 = await fetch(`${API_URL}?action=updateUserData&nrp=${nrp}&field=PANGKAT&new_value=${encodeURIComponent(pangkat)}`);
+                let j2 = await r2.json();
+                if (!j2.success) throw new Error(j2.error || 'Gagal update PANGKAT');
+                
+                // Update KESATUAN
+                let r3 = await fetch(`${API_URL}?action=updateUserData&nrp=${nrp}&field=KESATUAN&new_value=${encodeURIComponent(kesatuan)}`);
+                let j3 = await r3.json();
+                if (!j3.success) throw new Error(j3.error || 'Gagal update KESATUAN');
+                
+                alert('✅ Data personel berhasil diupdate!');
+                hideEditUserModal();
+                await loadData(); // Reload data dari server
+                
+            } catch (error) {
+                alert('❌ Gagal update data: ' + error.message);
+            } finally {
+                setModalLoading('editUserModal', false);
+            }
+        }
+
+        // Fungsi ini sudah benar (asli dari lu)
+        async function updateSenpiData() {
+            setModalLoading('editSenpiModal', true);
+            const nomorSeri = document.getElementById('editSenpiNomorSeri').value;
+            const status = document.getElementById('editSenpiStatus').value;
+            const keterangan = document.getElementById('editSenpiKeterangan').value;
+            const expired = document.getElementById('editSenpiExpired').value;
+            
+            try {
+                // Update STATUS
+                let r1 = await fetch(`${API_URL}?action=updateSenpiData&nomor_seri=${nomorSeri}&field=STATUS&new_value=${encodeURIComponent(status)}`);
+                let j1 = await r1.json();
+                if (!j1.success) throw new Error(j1.error || 'Gagal update STATUS');
+                
+                // Update KETERANGAN
+                let r2 = await fetch(`${API_URL}?action=updateSenpiData&nomor_seri=${nomorSeri}&field=KETERANGAN&new_value=${encodeURIComponent(keterangan)}`);
+                let j2 = await r2.json();
+                if (!j2.success) throw new Error(j2.error || 'Gagal update KETERANGAN');
+                
+                // Update EXPIRED
+                let r3 = await fetch(`${API_URL}?action=updateSenpiData&nomor_seri=${nomorSeri}&field=EXPIRED_SIMSA&new_value=${encodeURIComponent(expired)}`);
+                let j3 = await r3.json();
+                if (!j3.success) throw new Error(j3.error || 'Gagal update EXPIRED_SIMSA');
+                
+                alert('✅ Data senpi berhasil diupdate!');
+                hideEditSenpiModal();
+                await loadData(); // Reload data dari server
+                
+            } catch (error) {
+                alert('❌ Gagal update data: ' + error.message);
+            } finally {
+                setModalLoading('editSenpiModal', false);
+            }
+        }
+
+        // Fungsi ini sudah benar (asli dari lu)
+        async function assignSenpiToUser() {
+            setModalLoading('assignSenpiModal', true);
+            const nomorSeri = document.getElementById('assignSenpiNomorSeri').value;
+            const newNrp = document.getElementById('assignSenpiPersonel').value;
+            
+            if (!newNrp) {
+                alert('Pilih personel terlebih dahulu!');
+                setModalLoading('assignSenpiModal', false);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}?action=assignSenpi&nomor_seri=${nomorSeri}&new_nrp=${newNrp}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ Senpi berhasil diassign ke personel baru!');
+                    hideAssignSenpiModal();
+                    await loadData(); // Reload data dari server
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                alert('❌ Gagal assign senpi: ' + error.message);
+            } finally {
+                setModalLoading('assignSenpiModal', false);
+            }
+        }
+
+        // Fungsi ini sekarang mengirim data ke Google Sheet
+        async function deleteUser(nrp) {
+            const user = APP_DATA.users[nrp];
+            if (user.senpi && user.senpi.length > 0) {
+                alert('Tidak bisa menghapus personel yang masih memiliki senpi! Assign senpi ke personel lain terlebih dahulu.');
+                return;
+            }
+            
+            if (confirm(`Yakin hapus personel ${user.nama} (${nrp})? Tindakan ini tidak bisa dibatalkan.`)) {
+                setLoadingState(true);
+                try {
+                    const response = await fetch(`${API_URL}?action=deleteUser&nrp=${nrp}`);
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert('Personel berhasil dihapus!');
+                        await loadData(); // Reload
+                    } else {
+                        throw new Error(result.error || 'Gagal menghapus personel');
+                    }
+                } catch (error) {
+                    alert('❌ Gagal: ' + error.message);
+                    setLoadingState(false);
+                }
+            }
+        }
+
+        // Fungsi ini sekarang mengirim data ke Google Sheet
+        async function deleteSenpi(nomorSeri) {
+            if (confirm(`Yakin hapus senpi ${nomorSeri}? Tindakan ini tidak bisa dibatalkan.`)) {
+                setLoadingState(true);
+                try {
+                    const response = await fetch(`${API_URL}?action=deleteSenpi&nomor_seri=${nomorSeri}`);
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert('Senpi berhasil dihapus!');
+                        await loadData(); // Reload
+                    } else {
+                        throw new Error(result.error || 'Gagal menghapus senpi');
+                    }
+                } catch (error) {
+                    alert('❌ Gagal: ' + error.message);
+                    setLoadingState(false);
+                }
+            }
+        }
+        
+        // Fungsi Export (Tidak berubah)
+        function exportData() {
+            const exportType = document.getElementById('exportType').value;
+            const notes = document.getElementById('exportNotes').value || 'Backup data senpi';
+            
+            if (exportType === 'json') {
+                const dataStr = JSON.stringify(APP_DATA, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `backup-senpi-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+            } else if (exportType === 'excel') {
+                exportToCSV();
+            } else if (exportType === 'pdf') {
+                alert('Export PDF belum diimplementasikan');
+            }
+            
+            hideExportModal();
+        }
+
+        function exportToCSV() {
+            let csvContent = "NRP,Nama,Pangkat,Kesatuan,Nomor Seri,Jenis,Keterangan,Status,Tanggal SIMSA,Expired\n";
+            
+            Object.keys(APP_DATA.users).forEach(nrp => {
+                const user = APP_DATA.users[nrp];
+                if (user.senpi && user.senpi.length > 0) {
+                    user.senpi.forEach(senpi => {
+                        csvContent += `"${nrp}","${user.nama}","${user.pangkat}","${user.kesatuan}","${senpi.nomor_seri}","${senpi.jenis}","${senpi.keterangan}","${senpi.status}","${senpi.tanggal_terbit_simsa}","${senpi.tanggal_expired}"\n`;
+                    });
+                } else {
+                    csvContent += `"${nrp}","${user.nama}","${user.pangkat}","${user.kesatuan}","","","","","",""\n`;
+                }
+            });
+            
+            const blob = new Blob([csvContent], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `data-senpi-${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        function showAuditLog() {
+            const logs = JSON.parse(localStorage.getItem('activity_logs') || '[]');
+            let logContent = "AUDIT LOG (Lokal) - 100 Aktivitas Terakhir\n\n";
+            
+            if (logs.length === 0) {
+                logContent = 'Belum ada aktivitas tercatat.';
+            } else {
+                logs.reverse().forEach(log => {
+                    logContent += `[${new Date(log.timestamp).toLocaleString('id-ID')}] ${log.action}: ${log.description}\n`;
+                });
+            }
+            
+            alert(logContent);
+        }
+
+        function logout() {
+            if (confirm('Yakin ingin logout?')) {
+                window.location.href = 'login.html';
+            }
+        }
+
+        // Initialize the application
+        loadData();
+    </script>
+</body>
+</html>

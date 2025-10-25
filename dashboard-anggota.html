@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Anggota - Sistem Tracking Senpi</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* [ ... CSS LU YANG KEREN ... ] */
+        /* (Tidak ada perubahan di CSS, jadi saya sembunyikan agar rapi) */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info h1 {
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+            font-size: 1.8rem;
+        }
+
+        .user-info p {
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+
+        .user-badge {
+            background: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        /* Alert Banner */
+        .alert-banner {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            color: #d97706;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            border-left: 6px solid #f59e0b;
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.1rem;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .alert-banner.urgent {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            color: #dc2626;
+            border-left-color: #ef4444;
+        }
+
+        .alert-banner i {
+            font-size: 1.5rem;
+        }
+
+        /* Personal Stats */
+        .personal-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            text-align: center;
+            border-left: 6px solid var(--primary);
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card.total { border-left-color: var(--primary); }
+        .stat-card.aktif { border-left-color: var(--success); }
+        .stat-card.pending { border-left-color: var(--warning); }
+        .stat-card.expired { border-left-color: var(--danger); }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card.total .stat-number { color: var(--primary); }
+        .stat-card.aktif .stat-number { color: var(--success); }
+        .stat-card.pending .stat-number { color: var(--warning); }
+        .stat-card.expired .stat-number { color: var(--danger); }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        /* My Senpi Table */
+        .table-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .table-header h2 {
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+        }
+
+        .modern-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .modern-table th {
+            background: var(--light);
+            color: #64748b;
+            font-weight: 600;
+            padding: 1.2rem;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 1rem;
+        }
+
+        .modern-table td {
+            padding: 1.2rem;
+            border-bottom: 1px solid #f1f5f9;
+            color: var(--dark);
+            font-size: 1rem;
+        }
+
+        .modern-table tr:hover {
+            background: #f8fafc;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 0.6rem 1.2rem;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-hijau { 
+            background: #dcfce7; 
+            color: #16a34a; 
+            border: 1px solid #bbf7d0;
+        }
+        .status-kuning { 
+            background: #fef3c7; 
+            color: #d97706; 
+            border: 1px solid #fde68a;
+        }
+        .status-merah { 
+            background: #fee2e2; 
+            color: #dc2626; 
+            border: 1px solid #fecaca;
+        }
+        .status-hitam { 
+            background: #f1f5f9; 
+            color: #000000; 
+            border: 1px solid #e2e8f0;
+        }
+        .status-pending { 
+            background: #fef3c7; 
+            color: #d97706; 
+            border: 1px solid #fde68a;
+        }
+
+        /* Action Buttons */
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.25rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .btn:disabled {
+            background: #e2e8f0;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .btn-input { 
+            background: var(--success); 
+            color: white; 
+        }
+        .btn-perpanjang { 
+            background: var(--primary); 
+            color: white; 
+        }
+        .btn-view { 
+            background: #e5e5e5; 
+            color: #333; 
+        }
+        .btn-download { 
+            background: #8b5cf6; 
+            color: white; 
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal h2 {
+            margin-bottom: 1.5rem;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .input-group input:read-only {
+            background: #f1f5f9;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--dark);
+            font-size: 1rem;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .file-upload {
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            margin: 1rem 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload:hover {
+            border-color: var(--primary);
+            background: #f8fafc;
+        }
+
+        .file-preview {
+            display: none;
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .file-preview img {
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+
+        .btn-cancel {
+            background: #64748b;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        .btn-cancel:disabled {
+            background: #cbd5e1;
+        }
+
+        .btn-input:disabled {
+            background: #6ee7b7;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: #cbd5e1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .personal-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .table-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .modern-table {
+                font-size: 0.9rem;
+            }
+            
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="user-info">
+                <h1>Selamat Datang!</h1>
+                <p id="userInfoDisplay">Memuat data...</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <span class="user-badge">
+                    <i class="fas fa-user"></i> ANGGOTA
+                </span>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+
+        <div id="alertBanner" class="alert-banner">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div id="alertText"></div>
+        </div>
+
+        <div class="personal-stats">
+            <div class="stat-card total">
+                <span class="stat-number" id="totalSenpiSaya">0</span>
+                <div class="stat-label">Total Senpi Saya</div>
+            </div>
+            <div class="stat-card aktif">
+                <span class="stat-number" id="senpiAktifSaya">0</span>
+                <div class="stat-label">Senpi Aktif</div>
+            </div>
+            <div class="stat-card pending">
+                <span class="stat-number" id="perluInputSaya">0</span>
+                <div class="stat-label">Perlu Input Data</div>
+            </div>
+            <div class="stat-card expired">
+                <span class="stat-number" id="perluPerpanjangSaya">0</span>
+                <div class="stat-label">Perlu Perpanjang</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <h2><i class="fas fa-hand-holding"></i> Senpi Milik Saya</h2>
+            </div>
+
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>Nomor Seri</th>
+                        <th>Jenis Senpi</th>
+                        <th>Tanggal SIMSA</th>
+                        <th>Masa Berlaku</th>
+                        <th>Status</th>
+                        <th>Keterangan</th>
+                        <th width="250">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="mySenpiTable">
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <div>Memuat data senpi milik Anda...</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="inputDataModal" class="modal">
+        <div class="modal-content">
+            <h2><i class="fas fa-calendar-plus"></i> Input Data SIMSA</h2>
+            <form id="inputDataForm">
+                <div class="input-group">
+                    <label for="inputNomorSeri">Nomor Seri Senpi</label>
+                    <input type="text" id="inputNomorSeri" readonly>
+                </div>
+                
+                <div class="input-group">
+                    <label for="inputTanggalSIMSA">Tanggal Terbit SIMSA *</label>
+                    <input type="date" id="inputTanggalSIMSA" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Upload Foto SIMSA *</label>
+                    <div class="file-upload" onclick="document.getElementById('fotoSIMSA').click()">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 0.5rem; color: #64748b;"></i>
+                        <p>Klik untuk upload Foto SIMSA</p>
+                        <small>Format: JPG/PNG (Max 2MB)</small>
+                    </div>
+                    <input type="file" id="fotoSIMSA" accept="image/*" style="display: none;" onchange="previewImage('fotoSIMSA', 'previewSIMSA')">
+                    <div class="file-preview" id="previewSIMSA"></div>
+                </div>
+
+                <div class="input-group">
+                    <label>Upload Foto Senpi *</label>
+                    <div class="file-upload" onclick="document.getElementById('fotoSenpi').click()">
+                        <i class="fas fa-camera" style="font-size: 2rem; margin-bottom: 0.5rem; color: #64748b;"></i>
+                        <p>Klik untuk upload Foto Senpi</p>
+                        <small>Format: JPG/PNG (Max 2MB)</small>
+                    </div>
+                    <input type="file" id="fotoSenpi" accept="image/*" style="display: none;" onchange="previewImage('fotoSenpi', 'previewSenpi')">
+                    <div class="file-preview" id="previewSenpi"></div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="hideInputDataModal()">Batal</button>
+                    <button type="submit" class="btn btn-input" id="inputDataSubmitBtn">
+                        <i class="fas fa-save"></i>
+                        Simpan Data
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ✅ API URL DARI GOOGLE APPS SCRIPT
+        const API_URL = 'https://script.google.com/macros/s/AKfycbw5FruDwtoKoXI_9M-OVeehQOXuI7oDwxsmpbOwVjwFod6QX94FFZsrVdusRy5mkf4ihQ/exec';
+        
+        // Global Variables
+        let USER_DATA = null;
+        let currentUserNrp = null;
+        let selectedSenpi = null;
+
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        currentUserNrp = urlParams.get('nrp');
+
+        if (!currentUserNrp) {
+            alert('Akses ditolak. Silakan login terlebih dahulu.');
+            window.location.href = 'login.html';
+        }
+
+        // ✅ DIUBAH: Load data dari API, bukan data.json
+        async function loadData() {
+            setLoadingState(true);
+            try {
+                console.log('🔄 Memuat data untuk anggota NRP:', currentUserNrp);
+                
+                const response = await fetch(`${API_URL}?action=getAnggotaData&nrp=${currentUserNrp}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    USER_DATA = result.user; // Simpan data user
+                    initializeAnggotaDashboard();
+                } else {
+                    throw new Error(result.error || 'User tidak ditemukan');
+                }
+                
+            } catch (error) {
+                console.error('❌ Gagal memuat data:', error);
+                document.getElementById('mySenpiTable').innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <div>Gagal memuat data: ${error.message}</div>
+                            <small>Silakan refresh halaman atau login ulang</small>
+                        </td>
+                    </tr>
+                `;
+            } finally {
+                setLoadingState(false);
+            }
+        }
+        
+        function setLoadingState(isLoading) {
+            const buttons = document.querySelectorAll('.btn, .logout-btn');
+            buttons.forEach(btn => btn.disabled = isLoading);
+            
+            if (isLoading) {
+                 document.getElementById('mySenpiTable').innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
+            }
+        }
+
+        function initializeAnggotaDashboard() {
+            if (!USER_DATA) {
+                alert('Data user tidak ditemukan!');
+                logout();
+                return;
+            }
+
+            document.getElementById('userInfoDisplay').textContent = 
+                `${USER_DATA.nama} - ${USER_DATA.pangkat} (${USER_DATA.kesatuan}) - NRP: ${currentUserNrp}`;
+
+            loadMySenpiTable();
+            updatePersonalStats();
+            showAlerts();
+            initializeModal();
+        }
+
+        function hitungMasaBerlaku(tanggalExpired) {
+            if (!tanggalExpired) return { text: '-', status: 'pending' };
+            
+            const sekarang = new Date();
+            sekarang.setHours(0, 0, 0, 0); // Normalisasi ke awal hari
+            const expired = new Date(tanggalExpired);
+            
+            const selisihHari = Math.ceil((expired - sekarang) / (1000 * 60 * 60 * 24));
+            
+            if (selisihHari > 90) {
+                const bulan = Math.floor(selisihHari / 30);
+                const hari = selisihHari % 30;
+                return { text: `${bulan} bln ${hari} hr`, status: 'hijau' };
+            } else if (selisihHari > 30) {
+                const bulan = Math.floor(selisihHari / 30);
+                const hari = selisihHari % 30;
+                return { text: `${bulan} bln ${hari} hr`, status: 'kuning' };
+            } else if (selisihHari >= 0) { // Termasuk hari ini
+                return { text: `${selisihHari} hari`, status: 'merah' };
+            } else {
+                return { text: 'EXPIRED', status: 'hitam' };
+            }
+        }
+
+        function loadMySenpiTable() {
+            const tbody = document.getElementById('mySenpiTable');
+            const myItems = USER_DATA.senpi || [];
+            
+            if (myItems.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <div>Belum ada senpi yang diassign kepada Anda</div>
+                            <small>Hubungi admin untuk mendapatkan senpi</small>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = myItems.map(item => {
+                const statusData = item.status || 'PENDING';
+                let masaBerlaku = '-';
+                let statusBadge = 'status-pending';
+                let statusText = 'Pending';
+                let actions = '';
+                
+                // Cek jika status PENDING (belum input SIMSA)
+                if (statusData === 'PENDING' || !item.tanggal_terbit_simsa) {
+                    actions = `
+                        <button class="btn btn-input" onclick="showInputDataModal('${item.nomor_seri}')">
+                            <i class="fas fa-edit"></i> Input Data
+                        </button>
+                    `;
+                } else {
+                    // Jika sudah input, hitung masa berlaku
+                    const countdown = hitungMasaBerlaku(item.tanggal_expired);
+                    masaBerlaku = countdown.text;
+                    statusBadge = `status-${countdown.status}`;
+                    statusText = countdown.text === 'EXPIRED' ? 'Expired' : 'Aktif';
+                    
+                    actions = `
+                        <button class="btn btn-view" onclick="viewDetail('${item.nomor_seri}')">
+                            <i class="fas fa-eye"></i> Lihat
+                        </button>
+                        <button class="btn btn-download" onclick="downloadFormPerpanjang('${item.nomor_seri}')">
+                            <i class="fas fa-file-download"></i> Form
+                        </button>
+                    `;
+                    
+                    if (countdown.status === 'merah' || countdown.status === 'hitam') {
+                        actions += `
+                            <button class="btn btn-perpanjang" onclick="showPerpanjangInfo('${item.nomor_seri}')">
+                                <i class="fas fa-sync-alt"></i> Perpanjang
+                            </button>
+                        `;
+                    }
+                }
+                
+                return `
+                    <tr>
+                        <td><strong>${item.nomor_seri}</strong></td>
+                        <td>${item.jenis || 'Senpi Pendek'}</td>
+                        <td>${item.tanggal_terbit_simsa || '-'}</td>
+                        <td>${masaBerlaku}</td>
+                        <td><span class="status-badge ${statusBadge}">${statusText}</span></td>
+                        <td>${item.keterangan}</td>
+                        <td>${actions}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updatePersonalStats() {
+            const myItems = USER_DATA.senpi || [];
+            const perluInput = myItems.filter(item => (item.status || 'PENDING') === 'PENDING' || !item.tanggal_terbit_simsa).length;
+            
+            let aktif = 0;
+            let perluPerpanjang = 0;
+
+            myItems.filter(item => item.tanggal_terbit_simsa).forEach(item => {
+                const countdown = hitungMasaBerlaku(item.tanggal_expired);
+                if (countdown.status === 'hijau' || countdown.status === 'kuning') {
+                    aktif++;
+                } else {
+                    perluPerpanjang++;
+                }
+            });
+            
+            document.getElementById('totalSenpiSaya').textContent = myItems.length;
+            document.getElementById('senpiAktifSaya').textContent = aktif;
+            document.getElementById('perluInputSaya').textContent = perluInput;
+            document.getElementById('perluPerpanjangSaya').textContent = perluPerpanjang;
+        }
+
+        function showAlerts() {
+            const alertBanner = document.getElementById('alertBanner');
+            const stats = {
+                input: parseInt(document.getElementById('perluInputSaya').textContent),
+                perpanjang: parseInt(document.getElementById('perluPerpanjangSaya').textContent)
+            };
+            
+            if (stats.input > 0 || stats.perpanjang > 0) {
+                let alertText = '';
+                
+                if (stats.perpanjang > 0) {
+                    alertText += `<strong>${stats.perpanjang} senpi EXPIRED</strong> atau perlu perpanjangan. `;
+                    alertBanner.className = 'alert-banner urgent';
+                } else {
+                    alertBanner.className = 'alert-banner';
+                }
+                
+                if (stats.input > 0) {
+                    alertText += `<strong>${stats.input} senpi perlu input data SIMSA.</strong> `;
+                }
+                
+                document.getElementById('alertText').innerHTML = alertText + ' Segera tindak lanjuti!';
+                alertBanner.style.display = 'flex';
+            } else {
+                alertBanner.style.display = 'none';
+            }
+        }
+
+        // Modal Functions
+        function initializeModal() {
+            document.getElementById('inputDataForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await saveInputData();
+            });
+        }
+        
+        function setModalLoading(modalId, isLoading) {
+            const modal = document.getElementById(modalId);
+            const submitBtn = modal.querySelector('.btn-input'); // Disesuaikan
+            const cancelBtn = modal.querySelector('.btn-cancel');
+            
+            if (submitBtn) submitBtn.disabled = isLoading;
+            if (cancelBtn) cancelBtn.disabled = isLoading;
+            
+            if (submitBtn) {
+                const icon = submitBtn.querySelector('i');
+                if (isLoading) {
+                    icon.className = "fas fa-spinner fa-spin";
+                } else {
+                    icon.className = "fas fa-save";
+                }
+            }
+        }
+
+        function showInputDataModal(nomorSeri) {
+            selectedSenpi = nomorSeri;
+            document.getElementById('inputNomorSeri').value = nomorSeri;
+            document.getElementById('inputTanggalSIMSA').value = '';
+            document.getElementById('fotoSIMSA').value = '';
+            document.getElementById('fotoSenpi').value = '';
+            document.getElementById('previewSIMSA').style.display = 'none';
+            document.getElementById('previewSenpi').style.display = 'none';
+            document.getElementById('inputDataModal').style.display = 'flex';
+        }
+
+        function hideInputDataModal() {
+            if (document.getElementById('inputDataSubmitBtn').disabled) return; // Jangan tutup jika sedang loading
+            document.getElementById('inputDataModal').style.display = 'none';
+        }
+
+        function previewImage(inputId, previewId) {
+            const input = document.getElementById(inputId);
+            const preview = document.getElementById(previewId);
+            
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview">
+                        <p>${input.files[0].name}</p>
+                    `;
+                    preview.style.display = 'block';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // ✅ Helper untuk convert file ke Base64
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    // Hasilnya adalah: "data:image/jpeg;base64,..."
+                    // Kita ambil hanya data Base64-nya saja
+                    const base64Data = reader.result.split(',')[1];
+                    resolve({
+                        fileName: file.name,
+                        mimeType: file.type,
+                        base64Data: base64Data
+                    });
+                };
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ✅ DIUBAH TOTAL: Fungsi ini mengirim data ke Google Sheet
+        async function saveInputData() {
+            setModalLoading('inputDataModal', true);
+            
+            const tanggalSIMSA = document.getElementById('inputTanggalSIMSA').value;
+            const fotoSIMSAFile = document.getElementById('fotoSIMSA').files[0];
+            const fotoSenpiFile = document.getElementById('fotoSenpi').files[0];
+            
+            if (!tanggalSIMSA || !fotoSIMSAFile || !fotoSenpiFile) {
+                alert('Semua field (Tanggal, Foto SIMSA, Foto Senpi) harus diisi!');
+                setModalLoading('inputDataModal', false);
+                return;
+            }
+            
+            try {
+                // 1. Convert kedua file ke Base64 secara paralel
+                console.log('Mengubah file ke Base64...');
+                const [simsaData, senpiData] = await Promise.all([
+                    readFileAsBase64(fotoSIMSAFile),
+                    readFileAsBase64(fotoSenpiFile)
+                ]);
+                
+                // 2. Hitung tanggal expired (1 tahun)
+                const expiredDate = new Date(tanggalSIMSA);
+                expiredDate.setFullYear(expiredDate.getFullYear() + 1);
+                const tanggalExpired = expiredDate.toISOString().split('T')[0];
+
+                // 3. Siapkan payload untuk dikirim
+                const payload = {
+                    action: 'updateSimsaData', // Aksi baru untuk di Apps Script
+                    nrp: currentUserNrp,
+                    nomor_seri: selectedSenpi,
+                    tanggal_terbit_simsa: tanggalSIMSA,
+                    tanggal_expired: tanggalExpired,
+                    foto_simsa: simsaData, // Ini object { fileName, mimeType, base64Data }
+                    foto_senpi: senpiData  // Ini object { fileName, mimeType, base64Data }
+                };
+                
+                console.log('Mengirim data ke server...');
+
+                // 4. Kirim data menggunakan POST
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ Data berhasil disimpan! Status senpi sekarang: AKTIF');
+                    logActivity('INPUT_SIMSA', currentUserNrp, `Input data SIMSA untuk senpi ${selectedSenpi}`);
+                    hideInputDataModal();
+                    await loadData(); // Reload data dari server
+                } else {
+                    throw new Error(result.error || 'Gagal menyimpan data ke server');
+                }
+
+            } catch (error) {
+                alert('❌ Gagal menyimpan data: ' + error.message);
+                console.error(error);
+            } finally {
+                setModalLoading('inputDataModal', false);
+            }
+        }
+
+
+        // Fungsi View, Download, dll (Tidak Berubah)
+        function viewDetail(nomorSeri) {
+            const item = USER_DATA.senpi.find(s => s.nomor_seri === nomorSeri);
+            const countdown = hitungMasaBerlaku(item.tanggal_expired);
+            
+            let detailText = `
+📋 DETAIL SENPI
+
+Nomor Seri: ${item.nomor_seri}
+Jenis: ${item.jenis || 'Senpi Pendek'}
+Tanggal SIMSA: ${item.tanggal_terbit_simsa || '-'}
+Expired: ${item.tanggal_expired || '-'}
+Masa Berlaku: ${countdown.text}
+Status: ${countdown.status.toUpperCase()}
+Keterangan: ${item.keterangan || '-'}
+
+Foto SIMSA: ${item.foto_simsa ? '✅ Tersimpan' : '❌ Belum'}
+Foto Senpi: ${item.foto_senpi ? '✅ Tersimpan' : '❌ Belum'}
+            `;
+            
+            if (!item.tanggal_terbit_simsa) {
+                detailText += '\n\n⚠️ Segera input data SIMSA untuk mengaktifkan senpi!';
+            } else if (countdown.status === 'merah' || countdown.status === 'hitam') {
+                detailText += '\n\n🚨 Segera ajukan perpanjangan SIMSA!';
+            }
+            
+            alert(detailText);
+        }
+
+        function downloadFormPerpanjang(nomorSeri) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const item = USER_DATA.senpi.find(s => s.nomor_seri === nomorSeri);
+            
+            doc.setFont('helvetica');
+            doc.setFontSize(16);
+            doc.setTextColor(37, 99, 235);
+            doc.text('FORMULIR PERPANJANGAN SIMSA SENPI', 20, 20);
+            
+            doc.setFontSize(10);
+            doc.setTextColor(100, 116, 139);
+            doc.text('SISTEM TRACKING SENPI', 20, 30);
+            
+            doc.setDrawColor(37, 99, 235);
+            doc.line(20, 35, 190, 35);
+            
+            doc.setFontSize(12);
+            doc.setTextColor(30, 41, 59);
+            doc.text('DATA PEMOHON', 20, 50);
+            
+            doc.setFontSize(10);
+            doc.text(`Nama: ${USER_DATA.nama}`, 20, 60);
+            doc.text(`NRP: ${currentUserNrp}`, 20, 67);
+            doc.text(`Pangkat: ${USER_DATA.pangkat}`, 20, 74);
+            doc.text(`Kesatuan: ${USER_DATA.kesatuan}`, 20, 81);
+            
+            doc.setFontSize(12);
+            doc.text('DATA SENPI YANG DIAJUKAN', 20, 100);
+            
+            doc.setFontSize(10);
+            doc.text(`Nomor Seri: ${item.nomor_seri}`, 20, 110);
+            doc.text(`Jenis Senpi: ${item.jenis || 'Senpi Pendek'}`, 20, 117);
+            doc.text(`Tanggal SIMSA: ${item.tanggal_terbit_simsa || '-'}`, 20, 124);
+            doc.text(`Tanggal Expired: ${item.tanggal_expired || '-'}`, 20, 131);
+            
+            doc.setFontSize(12);
+            doc.text('SYARAT PERPANJANGAN SIMSA:', 20, 150);
+            
+            const syarat = ["1. SURAT PENGANTAR DARI SATKER", "2. SKHP DAN DUMAS DARI KAUR PROVOS", "3. PSIKOLOGI", "4. BEBAS NARKOBA", "5. SPRINT JAB / YANKAM / BP", "6. SURAT PERNYATAAN CALON PEMEGANG SENPI (MATERAI)", "7. SURAT PERNYATAAN ISTRI", "8. SOSIOMETRI", "9. DOMISILI", "10. HASIL MENEMBAK", "11. PAS FOTO 2x3 1 LEMBAR", "12. NOTA DINAS DARI KASATKER"];
+            
+            let yPos = 160;
+            syarat.forEach(s => {
+                if (yPos > 270) { doc.addPage(); yPos = 20; }
+                doc.setFontSize(9);
+                doc.text(s, 25, yPos);
+                yPos += 6;
+            });
+            
+            doc.setFontSize(8);
+            doc.setTextColor(100, 116, 139);
+            doc.text(`Generated on: ${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}`, 20, 280);
+            
+            doc.save(`FORM_PERPANJANG_SIMSA_${nomorSeri}.pdf`);
+            
+            logActivity('DOWNLOAD_FORM', currentUserNrp, `Download form perpanjangan untuk ${nomorSeri}`);
+            alert('✅ Formulir perpanjangan berhasil didownload!');
+        }
+
+        function showPerpanjangInfo(nomorSeri) {
+            const item = USER_DATA.senpi.find(s => s.nomor_seri === nomorSeri);
+            
+            const info = `
+🚨 SENPI PERLU PERPANJANGAN!
+
+Nomor Seri: ${nomorSeri}
+Pemilik: ${USER_DATA.nama}
+Expired: ${item.tanggal_expired}
+
+📋 TINDAKAN:
+1. Download formulir perpanjangan
+2. Lengkapi semua syarat
+3. Ajukan ke bagian Provost
+            `;
+            
+            if (confirm(info + '\n\nDownload formulir perpanjangan sekarang?')) {
+                downloadFormPerpanjang(nomorSeri);
+            }
+        }
+
+        function logActivity(action, userNrp, description) {
+            try {
+                const activity = {
+                    timestamp: new Date().toISOString(),
+                    action: action,
+                    user_nrp: userNrp,
+                    description: description
+                };
+                
+                const logs = JSON.parse(localStorage.getItem('activity_logs') || '[]');
+                logs.push(activity);
+                localStorage.setItem('activity_logs', JSON.stringify(logs.slice(-100)));
+                console.log('📝 Activity logged:', activity);
+            } catch (error) {
+                console.error('❌ Failed to log activity:', error);
+            }
+        }
+
+        function logout() {
+            if (confirm('Yakin ingin logout?')) {
+                window.location.href = 'login.html';
+            }
+        }
+
+        // Load data on start
+        loadData();
+    </script>
+</body>
+</html>
